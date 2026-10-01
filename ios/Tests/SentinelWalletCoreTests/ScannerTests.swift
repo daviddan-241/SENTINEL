@@ -31,9 +31,9 @@ final class StubProvider: AddressProvider, @unchecked Sendable {
 
     func report(address: String, network: Network, limit: Int) async throws -> ProviderReport {
         if delay > 0 { try? await Task.sleep(nanoseconds: UInt64(delay * 1_000_000_000)) }
-        lock.lock()
-        let next: Result<ProviderReport, ChainError>? = queue.count > 1 ? queue.removeFirst() : queue.first
-        lock.unlock()
+        let next: Result<ProviderReport, ChainError>? = lock.withLock {
+            queue.count > 1 ? queue.removeFirst() : queue.first
+        }
         switch next {
         case .success(let report): return report
         case .failure(let error): throw error

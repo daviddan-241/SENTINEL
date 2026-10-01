@@ -137,7 +137,7 @@ final class ChainDecodingTests: XCTestCase {
         let broken = BlockscoutProvider(network: Networks.ethereum,
                                         transport: FixtureTransport(routes: [("/api/v2/addresses/", "btc_prices")]))
         do {
-            _ = try await try XCTUnwrap(broken).report(address: evmAddress, network: Networks.ethereum)
+            _ = try await XCTUnwrap(broken).report(address: evmAddress, network: Networks.ethereum)
             XCTFail("expected a decoding failure")
         } catch let error as ChainError {
             if case .decoding = error {} else { XCTFail("wrong error: \(error)") }

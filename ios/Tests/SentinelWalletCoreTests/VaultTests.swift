@@ -183,7 +183,7 @@ final class VaultTests: XCTestCase {
         var unlocked = try Vault.create(password: "a much longer passphrase 42", iterations: 1_000)
         let item = try unlocked.add(kind: .mnemonic, label: "Test vector", hint: TestVectors.btcLegacyAddress,
                                     secret: Data(TestVectors.mnemonic.utf8))
-        let payload = try String(data: try unlocked.secret(of: item), encoding: .utf8) ?? ""
+        let payload = String(data: try unlocked.secret(of: item), encoding: .utf8) ?? ""
 
         let accounts = try Derivation.accounts(for: .mnemonic(phrase: payload, passphrase: ""))
         XCTAssertEqual(accounts.count, 11)
