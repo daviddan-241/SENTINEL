@@ -19,6 +19,34 @@ works with the network switched off.
 
 ---
 
+## The iOS app — Sentinel
+
+`ios/` contains the native companion: a **read-only wallet-security and portfolio tool** for
+iPhone, built in SwiftUI on a Foundation-only core package shared with a command-line scanner.
+Same visual language as the web app — glass, violet → cyan, one spring curve — as a real iOS
+app with a real encrypted vault, real BIP-39/32 key derivation and real chain data.
+
+| | |
+|---|---|
+| **Real data only** | Every balance, price, token and transaction is read live from public blockchain providers. Two independent sources must agree on a balance or the address is marked *verification required* and left out of the total. Nothing is mocked, and silence is never shown as an empty wallet |
+| **Six EVM chains** | Ethereum, Base, Arbitrum, OP Mainnet, Polygon, Gnosis — explorer plus an independent JSON-RPC node |
+| **Bitcoin** | Two separate Esplora indexers (mempool.space, blockstream.info) compared against each other |
+| **Solana** | Two public RPC endpoints, with SPL tokens deliberately not claimed |
+| **Encrypted vault** | PBKDF2-HMAC-SHA512 (600k) → AES-256-GCM, per-item AAD binding, atomic writes with complete file protection, doubling lockout, 90-second clipboard wipe, app-switcher blur shield |
+| **No signing code** | The app cannot move funds. There is no transaction builder in the package |
+| **93 core tests** | BIP-39, BIP-32/44/49/84/86 vectors, Base58/Bech32/SS58/EIP-55, vault tamper rejection, lockout, spam heuristics, decoders run against captured provider payloads — green on Linux CI |
+
+```bash
+cd ios
+swift test                        # the core, no Xcode needed
+xcodegen generate && open SentinelWallet.xcodeproj
+```
+
+Full detail — build steps, the provider matrix, the threat model and what the app does **not**
+do — is in **[ios/README.md](ios/README.md)** and `ios/docs/`.
+
+---
+
 ## What's inside
 
 | | |
@@ -111,6 +139,14 @@ app/bip39.txt             the official BIP-39 word list
 tests/                    backend suite + browser end-to-end suite
 docs/screenshots/         the images in this README
 tools/push.sh             push helper that never stores a token in the repo
+
+ios/                      the native app — see ios/README.md
+  SentinelWallet/         SwiftUI app: design system, features, security gates, app state
+  Core/                   Foundation-only core: crypto, wallet, vault, chain clients
+  Tests/                  93 tests over official vectors and captured provider payloads
+  Tools/sentinel-cli/     the same core as a command-line scanner
+  docs/                   networks · security · design · vectors
+  project.yml             XcodeGen manifest (the .xcodeproj is generated, not committed)
 ```
 
 ## Adding a word

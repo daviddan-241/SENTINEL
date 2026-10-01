@@ -1,0 +1,17 @@
+{
+ "hash": "0x9858EfFD232B4033E47d90003D41EC34EcaEda94",
+ "coin_balance": "0",
+ "is_contract": true,
+ "has_tokens": true,
+ "has_token_transfers": true,
+ "has_logs": true,
+ "ens_domain_name": null,
+ "exchange_rate": "2689.44",
+ "implementations": [
+  {
+   "address_hash": "0x8A67B5020eE254eF48e3B6a04927F39bAf7e408A",
+   "name": null
+  }
+ ],
+ "creation_status": "success"
+}

@@ -20,6 +20,15 @@ backup/
 Unselected files/
 *.log
 
+# --- Swift / Xcode ----------------------------------------------------------
+ios/.build/
+ios/.swiftpm/
+ios/*.xcodeproj/
+ios/*.xcworkspace/
+ios/DerivedData/
+*.xcuserstate
+xcuserdata/
+
 # --- tooling caches that live in the workspace ------------------------------
 .cache/
 .local/
@@ -32,3 +41,6 @@ Unselected files/
 .idea/
 .vscode/
 *.swp
+
+# --- SwiftPM machine-local state -------------------------------------------
+.swiftpm/

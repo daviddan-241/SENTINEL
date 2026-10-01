@@ -1,0 +1,10 @@
+{
+ "address_hash": "0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48",
+ "name": "USDC",
+ "symbol": "USDC",
+ "decimals": "6",
+ "type": "ERC-20",
+ "total_supply": "49064797866886641",
+ "holders_count": "9415609",
+ "exchange_rate": "0.999916"
+}

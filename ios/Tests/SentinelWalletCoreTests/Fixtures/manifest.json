@@ -1,0 +1,21 @@
+{
+  "captured_at": "2026-10-01T21:55:20Z",
+  "note": "Live responses, trimmed to the fields the app decodes. See tools/capture_fixtures.sh.",
+  "sources": [
+    {"file": "evm_eth_address.json", "url": "https://eth.blockscout.com/api/v2/addresses/0x9858EfFD232B4033E47d90003D41EC34EcaEda94", "http_status": 200, "captured_at": "2026-10-01T21:55:20Z"},
+    {"file": "evm_eth_counters.json", "url": "https://eth.blockscout.com/api/v2/addresses/0x9858EfFD232B4033E47d90003D41EC34EcaEda94/counters", "http_status": 200, "captured_at": "2026-10-01T21:55:20Z"},
+    {"file": "evm_eth_token_balances.json", "url": "https://eth.blockscout.com/api/v2/addresses/0x9858EfFD232B4033E47d90003D41EC34EcaEda94/token-balances", "http_status": 200, "captured_at": "2026-10-01T21:55:20Z"},
+    {"file": "evm_eth_transactions.json", "url": "https://eth.blockscout.com/api/v2/addresses/0x9858EfFD232B4033E47d90003D41EC34EcaEda94/transactions", "http_status": 200, "captured_at": "2026-10-01T21:55:20Z"},
+    {"file": "evm_eth_stats.json", "url": "https://eth.blockscout.com/api/v2/stats", "http_status": 200, "captured_at": "2026-10-01T21:55:20Z"},
+    {"file": "evm_token_usdc.json", "url": "https://eth.blockscout.com/api/v2/tokens/0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48", "http_status": 200, "captured_at": "2026-10-01T21:55:20Z"},
+    {"file": "btc_address.json", "url": "https://mempool.space/api/address/1LqBGSKuX5yYUonjxT5qGfpUsXKYYWeabA", "http_status": 200, "captured_at": "2026-10-01T21:55:20Z"},
+    {"file": "btc_segwit_address.json", "url": "https://mempool.space/api/address/bc1qcr8te4kr609gcawutmrza0j4xv80jy8z306fyu", "http_status": 200, "captured_at": "2026-10-01T21:55:20Z"},
+    {"file": "btc_transactions.json", "url": "https://mempool.space/api/address/1LqBGSKuX5yYUonjxT5qGfpUsXKYYWeabA/txs", "http_status": 200, "captured_at": "2026-10-01T21:55:20Z"},
+    {"file": "btc_prices.json", "url": "https://mempool.space/api/v1/prices", "http_status": 200, "captured_at": "2026-10-01T21:55:20Z"},
+    {"file": "kraken_sol.json", "url": "https://api.kraken.com/0/public/Ticker?pair=SOLUSD", "http_status": 200, "captured_at": "2026-10-01T21:55:20Z"},
+    {"file": "evm_rpc_nonce.json", "url": "https://ethereum-rpc.publicnode.com (eth_getTransactionCount, POST)", "captured_at": "2026-10-01T21:55:20Z"},
+    {"file": "evm_rpc_balance.json", "url": "https://ethereum-rpc.publicnode.com (eth_getBalance, POST)", "captured_at": "2026-10-01T21:55:20Z"},
+    {"file": "sol_signatures.json", "url": "https://api.mainnet-beta.solana.com (getSignaturesForAddress, POST)", "captured_at": "2026-10-01T21:55:20Z"},
+    {"file": "sol_balance.json", "url": "https://api.mainnet-beta.solana.com (getBalance, POST)", "captured_at": "2026-10-01T21:55:20Z"}
+  ]
+}

@@ -43,3 +43,30 @@ jobs:
 
       - name: Run the journey (tabs, wall, save, trending, offline, service worker)
         run: python3 tests/e2e_ui.py
+
+  ios-core:
+    name: ios core · crypto · vault · chain clients (90 tests)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install Swift 6.2
+        run: |
+          curl -sSL -o swift.tar.gz https://download.swift.org/swift-6.2-release/ubuntu2404/swift-6.2-RELEASE/swift-6.2-RELEASE-ubuntu24.04.tar.gz
+          mkdir -p "$HOME/swift"
+          tar xzf swift.tar.gz -C "$HOME/swift" --strip-components=1
+          echo "$HOME/swift/usr/bin" >> "$GITHUB_PATH"
+
+      - name: Cache the SwiftPM checkout of swift-crypto
+        uses: actions/cache@v4
+        with:
+          path: ios/.build
+          key: swiftpm-${{ runner.os }}-${{ hashFiles('ios/Package.swift') }}
+
+      - name: Run the core test suite
+        working-directory: ios
+        run: swift test --parallel
+
+      - name: Build the command-line scanner too
+        working-directory: ios
+        run: swift build -c release
