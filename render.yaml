@@ -1,0 +1,16 @@
+# One-click deploy for the WordVault backend + app (Render).
+# The dictionary, the 2,048-word seed list and the trainers work with no backend at all,
+# so this only adds live prices, cross-device sync and real-usage trending.
+services:
+  - type: web
+    name: wordvault
+    runtime: python
+    plan: free
+    buildCommand: "python3 -c \"import sys; sys.path.insert(0,'app'); import build; build.main()\""
+    startCommand: "python3 server.py"
+    healthCheckPath: /api/health
+    envVars:
+      - key: PYTHON_VERSION
+        value: "3.13"
+      - key: WORDVAULT_DB
+        value: /opt/render/project/src/var/wordvault.db

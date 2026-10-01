@@ -1,0 +1,45 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+
+jobs:
+  test:
+    name: build · content · api · database
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.13"
+
+      - name: Rebuild the single-file app (must match what is committed)
+        run: |
+          python3 app/build.py
+          git diff --exit-code --stat -- WordVault.html index.html manifest.webmanifest sw.js \
+            || (echo "::error::build output is stale — run python3 app/build.py and commit" && exit 1)
+
+      - name: Backend, content and BIP-39 test suite (no dependencies)
+        run: python3 tests/test_backend.py
+
+  ui:
+    name: browser end-to-end (iPhone profile)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.13"
+
+      - name: Install Playwright
+        run: |
+          python3 -m pip install --quiet playwright
+          python3 -m playwright install --with-deps chromium
+
+      - name: Run the journey (tabs, wall, save, trending, offline, service worker)
+        run: python3 tests/e2e_ui.py

@@ -1,0 +1,230 @@
+</head>
+<body>
+<script>
+/* iOS/iPadOS detection runs before the first paint: it only raises form-control font sizes,
+   which is what stops Safari from zooming the page when an input gets focus. */
+(function(){
+  var ua = navigator.userAgent || "";
+  var iOS = /iPad|iPhone|iPod/.test(ua) ||
+            (navigator.platform === "MacIntel" && typeof document.ontouchend !== "undefined");
+  if(iOS) document.documentElement.classList.add("ios");
+})();
+</script>
+<div class="aurora" aria-hidden="true"><i></i><i></i><i></i><i></i></div>
+
+<header class="top">
+  <div class="top-in">
+    <button class="iconbtn ripple" id="btnDrawer" aria-label="Open menu"><svg class="i" viewBox="0 0 24 24"><use href="#i-menu"/></svg></button>
+    <div class="brand">
+      <span class="mark"><svg class="i" viewBox="0 0 24 24"><use href="#i-key"/></svg></span>
+      <div style="min-width:0">
+        <b>WordVault</b>
+        <span><i class="dot" id="netDot"></i><span id="barSub">starting…</span></span>
+      </div>
+    </div>
+    <button class="iconbtn ripple" id="btnRandom" aria-label="Random word"><svg class="i" viewBox="0 0 24 24"><use href="#i-dice"/></svg></button>
+    <button class="iconbtn ripple" id="btnTheme" aria-label="Effects"><svg class="i" viewBox="0 0 24 24"><use href="#i-sun"/></svg></button>
+  </div>
+</header>
+
+<div class="tickerwrap" id="tickerWrap" hidden>
+  <div class="ticker glass" id="ticker">
+    <div class="rail" id="tickRail"></div>
+    <div class="badge" id="tickBadge">live</div>
+  </div>
+</div>
+
+<main>
+  <!-- ===================== HOME ===================== -->
+  <section class="view on" id="v-home">
+    <div class="hero card glass tint">
+      <div style="display:flex;gap:8px;flex-wrap:wrap">
+        <span class="badge"><svg class="i" viewBox="0 0 24 24"><use href="#i-sparkles"/></svg>BIP-39 · 2,048</span>
+        <span class="badge"><svg class="i" viewBox="0 0 24 24"><use href="#i-database"/></svg><span id="bTermCount">0</span> terms</span>
+        <span class="badge" id="badgeSeedDefs">41 seed words explained</span>
+        <span class="badge" id="badgeNet"><svg class="i" viewBox="0 0 24 24"><use href="#i-bolt"/></svg>offline ready</span>
+      </div>
+      <h1 style="margin-top:13px">Every crypto word.<br><em>All 2,048 seed words.</em></h1>
+      <p id="heroSub">The real word list wallets use for your recovery phrase, the vocabulary the industry speaks in 2026, and live market data — in one pocket tool.</p>
+      <div class="stats" id="heroStats"></div>
+    </div>
+
+    <h2 class="sec"><svg class="i" viewBox="0 0 24 24" style="width:13px;height:13px"><use href="#i-star"/></svg>Word of the day<span class="n" id="wodDate"></span></h2>
+    <div class="card glass wod" id="wodCard"></div>
+
+    <h2 class="sec"><svg class="i" viewBox="0 0 24 24" style="width:13px;height:13px"><use href="#i-brain"/></svg>Daily challenge</h2>
+    <div id="dailyQuiz"></div>
+
+    <h2 class="sec"><svg class="i" viewBox="0 0 24 24" style="width:13px;height:13px"><use href="#i-chart"/></svg>Live market<span class="n" id="mktAsOf"></span></h2>
+    <div id="homeMarket"></div>
+
+    <h2 class="sec"><svg class="i" viewBox="0 0 24 24" style="width:13px;height:13px"><use href="#i-flame"/></svg>Trending in the vault<span class="n" id="trendNote"></span></h2>
+    <div id="trending"></div>
+
+    <h2 class="sec"><svg class="i" viewBox="0 0 24 24" style="width:13px;height:13px"><use href="#i-key"/></svg>The word wall</h2>
+    <div class="card glass" id="wallPreview"></div>
+
+    <h2 class="sec"><svg class="i" viewBox="0 0 24 24" style="width:13px;height:13px"><use href="#i-bolt"/></svg>2026 watchlist</h2>
+    <div class="hscroll" id="watchlist"></div>
+
+    <h2 class="sec"><svg class="i" viewBox="0 0 24 24" style="width:13px;height:13px"><use href="#i-sliders"/></svg>Browse by category</h2>
+    <div class="chips" id="catChips"></div>
+
+    <h2 class="sec"><svg class="i" viewBox="0 0 24 24" style="width:13px;height:13px"><use href="#i-flame"/></svg>Your progress</h2>
+    <div class="card glass" id="progressCard"></div>
+  </section>
+
+  <!-- ===================== WORDS ===================== -->
+  <section class="view" id="v-words">
+    <div class="search" id="searchWrap">
+      <svg class="i" viewBox="0 0 24 24"><use href="#i-search"/></svg>
+      <input id="q" type="search" placeholder="Search the dictionary…" autocomplete="off" autocorrect="off" spellcheck="false">
+      <button class="clr" id="qClear" aria-label="Clear">✕</button>
+    </div>
+    <div class="filters" id="lvlFilters"></div>
+    <div class="filters" id="catFilters"></div>
+    <div class="rail" id="letterRail"></div>
+    <div id="termList"></div>
+  </section>
+
+  <!-- ===================== SEEDS ===================== -->
+  <section class="view" id="v-seeds">
+    <div class="card glass tint">
+      <span class="pill c">BIP-39 · 2,048 words</span>
+      <h3 style="margin:10px 0 6px;font-size:22px;letter-spacing:-.035em;font-weight:800">The real seed word list</h3>
+      <p style="margin:0;font-size:13.5px;color:#c9d1e6">Every wallet derives your 12 or 24-word recovery phrase from exactly these words. Learn them and no phrase will ever look unfamiliar.</p>
+      <div class="acts">
+        <button class="btn ghost" id="seedToCheck">Validate a phrase</button>
+        <button class="btn ghost" id="seedToCards">Train with cards</button>
+      </div>
+    </div>
+    <div class="seg" id="seedSeg">
+      <button class="on" data-s="list">List</button>
+      <button data-s="flash">Cards</button>
+      <button data-s="quiz">Quiz</button>
+      <button data-s="phrase">Phrase</button>
+      <button data-s="check">Check</button>
+      <button data-s="wall">Wall</button>
+    </div>
+    <div id="seedPane"></div>
+  </section>
+
+  <!-- ===================== MARKET ===================== -->
+  <section class="view" id="v-market">
+    <div class="card glass tint">
+      <span class="pill g">Live</span>
+      <h3 style="margin:10px 0 6px;font-size:22px;letter-spacing:-.035em;font-weight:800">Market pulse</h3>
+      <p style="margin:0;font-size:13.5px;color:#c9d1e6">Real prices, real 24-hour moves, real sentiment. Refreshed through the WordVault backend every 60 seconds.</p>
+      <div class="acts"><button class="btn pri" id="mkRefresh"><svg class="i" viewBox="0 0 24 24"><use href="#i-refresh"/></svg>Refresh now</button></div>
+    </div>
+    <div class="mkstats" id="mkStats" style="margin-top:12px"></div>
+    <div id="ggWrap" style="margin-top:9px"></div>
+    <div id="mkNote"></div>
+    <h2 class="sec">Prices<span class="n" id="mkCount"></span></h2>
+    <div class="coingrid" id="coinGrid"></div>
+    <h2 class="sec">Top movers · 24h</h2>
+    <div class="list" id="movers"></div>
+  </section>
+
+  <!-- ===================== PULSE ===================== -->
+  <section class="view" id="v-pulse">
+    <div class="card glass tint">
+      <span class="pill">Pulse</span>
+      <h3 style="margin:10px 0 6px;font-size:22px;letter-spacing:-.035em;font-weight:800">The lines that define the culture</h3>
+      <p style="margin:0;font-size:13.5px;color:#c9d1e6">Catchphrases, hard-won wisdom and safety rules from 17 years of crypto. Tap any card to copy it.</p>
+    </div>
+    <div class="filters" id="quoteFilters"></div>
+    <div class="list" id="quoteList"></div>
+    <h2 class="sec">Wallet emergency phrase <span class="n">(a joke)</span></h2>
+    <div class="card glass" id="phraseGen"></div>
+  </section>
+
+  <!-- ===================== VAULT ===================== -->
+  <section class="view" id="v-vault">
+    <div class="hero card glass tint">
+      <h1 style="font-size:26px">Your vault</h1>
+      <p>Progress is saved privately on this device — and synced to the WordVault backend when one is reachable.</p>
+      <div class="stats" id="vaultStats"></div>
+    </div>
+    <h2 class="sec">Saved words<span class="n" id="savedCount"></span></h2>
+    <div id="savedList"></div>
+    <h2 class="sec">Data</h2>
+    <div class="card glass">
+      <div class="kv"><span>Sync status<br><span style="font-size:11.5px;color:var(--muted-2)" id="syncInfo">checking…</span></span><b><button class="btn" id="btnSync" style="min-width:86px">Sync</button></b></div>
+      <div class="kv"><span>Export progress (JSON)</span><b><button class="btn" id="btnExport" style="min-width:86px"><svg class="i" viewBox="0 0 24 24"><use href="#i-download"/></svg>Export</button></b></div>
+      <div class="kv"><span>Import progress</span><b><button class="btn" id="btnImport" style="min-width:86px"><svg class="i" viewBox="0 0 24 24"><use href="#i-upload"/></svg>Import</button></b></div>
+      <div class="kv"><span>Reset everything</span><b><button class="btn warn" id="btnReset" style="min-width:86px">Reset</button></b></div>
+    </div>
+    <h2 class="sec">Appearance &amp; effects</h2>
+    <div class="card glass">
+      <div class="kv"><span>Glow, motion, haptics and compact mode now live in the side menu — one place for every switch.</span>
+      <b><button class="btn" id="btnOpenSettings" style="min-width:86px">Open menu</button></b></div>
+    </div>
+    <footer class="ft">WordVault v2 · works offline · nothing is sold, nothing is tracked beyond anonymous counters.</footer>
+  </section>
+
+  <!-- ===================== SAFETY ===================== -->
+  <section class="view" id="v-safety">
+    <div class="card glass tint">
+      <span class="pill r">Non-negotiable</span>
+      <h3 style="margin:10px 0 6px;font-size:22px;letter-spacing:-.035em;font-weight:800">Self-custody rules</h3>
+      <p style="margin:0;font-size:13.5px;color:#c9d1e6">Twelve rules that prevent almost every loss in crypto. Read them once, then read them again after your first good month.</p>
+    </div>
+    <h2 class="sec">The twelve</h2>
+    <div id="rulesList"></div>
+    <h2 class="sec">Scam checklist</h2>
+    <div class="card glass" id="scamCard"></div>
+  </section>
+
+  <!-- ===================== ABOUT ===================== -->
+  <section class="view" id="v-about">
+    <div class="card glass tint">
+      <span class="pill c">About</span>
+      <h3 style="margin:10px 0 6px;font-size:22px;letter-spacing:-.035em;font-weight:800">What this is</h3>
+      <p style="margin:0;font-size:13.5px;color:#c9d1e6">WordVault is a reference and a trainer: the official BIP-39 seed word list, a large crypto dictionary, live market data and a practice environment. Educational only — never financial advice.</p>
+    </div>
+    <h2 class="sec">Backend</h2>
+    <div class="card glass" id="backendCard"></div>
+    <h2 class="sec">Data sources</h2>
+    <div class="card glass" id="sourcesCard"></div>
+    <h2 class="sec">How BIP-39 actually works</h2>
+    <div class="card glass" id="bipCard"></div>
+    <footer class="ft">WordVault v2.0 · <span id="ftTerms">0</span> crypto terms · 2,048 seed words<br>Built offline-first for iPhone.</footer>
+  </section>
+</main>
+
+<nav class="tabbar">
+  <div class="tabs" id="tabs">
+    <div class="ind" id="tabInd"></div>
+    <button class="tabbtn on ripple" data-v="home"><svg class="i" viewBox="0 0 24 24"><use href="#i-home"/></svg><span>Home</span><i class="pip"></i></button>
+    <button class="tabbtn ripple" data-v="words"><svg class="i" viewBox="0 0 24 24"><use href="#i-book"/></svg><span>Words</span><i class="pip"></i></button>
+    <button class="tabbtn ripple" data-v="seeds"><svg class="i" viewBox="0 0 24 24"><use href="#i-key"/></svg><span>Seeds</span><i class="pip"></i></button>
+  </div>
+</nav>
+
+<div class="scrim" id="scrim"></div>
+<aside class="drawer" id="drawer" aria-label="Menu">
+  <div class="dhead">
+    <div class="dprofile">
+      <div class="ring" id="dRing"></div>
+      <div style="min-width:0">
+        <b style="font-size:15.5px;font-weight:720;display:block" id="dTitle">Welcome</b>
+        <span style="font-size:12px;color:#c6cde3" id="dSub">0 of 2,048 seed words</span>
+      </div>
+    </div>
+    <div class="dstatus"><i class="dot" id="dDot"></i><span id="dStatus">checking backend…</span></div>
+  </div>
+  <div class="dbody">
+    <div class="dtitle">Explore</div>
+    <div id="drawerTools"></div>
+    <div class="dtitle">Your data</div>
+    <div id="drawerData"></div>
+    <div class="dtitle">Appearance</div>
+    <div id="drawerLook"></div>
+    <footer class="ft" style="margin-top:20px">WordVault v2.0 · offline-first</footer>
+  </div>
+</aside>
+
+<div class="sheet" id="sheet" role="dialog" aria-modal="true"><div class="sheet-in" id="sheetIn"></div></div>
+<div class="toast" id="toast"></div>
+<input type="file" id="filePick" accept="application/json,.json" style="display:none">
