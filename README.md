@@ -91,11 +91,19 @@ curl -s http://localhost:8000/api/ping      # {"ok":true,"pong":...,"version":"3
 
 ## Deploy & monitoring
 
+**GitHub is the whole deployment.** The app is a static file on Pages, and live prices arrive with
+no server at all — a scheduled Action refreshes `market.json` every 15 minutes, and if that file is
+stale the page reads Kraken and alternative.me directly from the browser. The backend is optional.
+
 | Step | Where | What |
 |---|---|---|
-| 1 | [dashboard.render.com](https://dashboard.render.com) | New → Blueprint → `daviddan-241/SENTINEL` → Apply. Reads `render.yaml`; free plan |
-| 2 | [uptimerobot.com](https://uptimerobot.com) | New monitor → Keyword → `https://YOUR-APP.onrender.com/api/ping` → keyword `pong` → every 5 min |
-| 3 | The app | Drawer → About → Backend → paste the service URL |
+| 1 | Nothing | `https://daviddan-241.github.io/SENTINEL/` already works, prices included |
+| 2 | Optional — [dashboard.render.com](https://dashboard.render.com) | New → Blueprint → `daviddan-241/SENTINEL` → Apply, for server-side sync + trending |
+| 3 | Optional — [uptimerobot.com](https://uptimerobot.com) | Keyword monitor on `/api/ping`, keyword `pong`, every 5 min (keeps a free instance awake) |
+
+The market screen always states which of the three sources answered — `coingecko`, `kraken`,
+`market.json snapshot` or `public api` — and a field that cannot be fetched renders as a dash
+rather than an invented number.
 
 `/api/ping` exists for exactly this: it touches no database, no file and no cache, so monitoring
 costs nothing and a sleeping free instance wakes on the lightest possible request. `/api/health` is

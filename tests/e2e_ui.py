@@ -270,6 +270,43 @@ def main():
                   kp.text_content("#mkNote")[:50])
             kctx.close()
 
+            # ---------------------------------------------------------- static host (no backend at all)
+            # GitHub Pages cannot run Python, so this is the shape of the real deployment:
+            # every /api/ call fails, and prices must still arrive from the committed snapshot.
+            print("\nstatic host")
+            snap = json.dumps({
+                "source": "snapshot", "ts": 1790000000,
+                "coins": [{"id": "bitcoin", "sym": "BTC", "name": "Bitcoin", "price": 84250.5,
+                           "chg": 1.2, "spark": [], "cap": None, "vol": None}],
+                "global": {"mcap": None, "vol": None, "btcDom": None, "ethDom": None, "coins": None},
+                "fearGreed": None})
+            sctx = browser.new_context(viewport={"width": 390, "height": 844}, is_mobile=True,
+                                       has_touch=True, user_agent=IPHONE_UA)
+            sp = sctx.new_page()
+            serr = []
+            sp.on("pageerror", lambda e: serr.append(str(e)[:150]))
+            sp.route("**/api/**", lambda r: r.abort())
+            sp.route("**/market.json*", lambda r: r.fulfill(status=200,
+                     content_type="application/json", body=snap))
+            sp.goto(base + "/", wait_until="domcontentloaded")
+            sp.wait_for_timeout(2500)
+            sp.click("#btnDrawer")
+            sp.wait_for_timeout(500)
+            sp.evaluate("document.querySelectorAll('#drawer .drow')[0].click()")   # Market pulse
+            sp.wait_for_timeout(2000)
+            check("static host renders prices with every API call blocked",
+                  len(sp.eval_on_selector("#coinGrid", "e=>e.innerHTML")) > 200)
+            check("static host names the snapshot as its source",
+                  "snapshot" in sp.text_content("#mkCount").lower(),
+                  sp.text_content("#mkCount")[:40])
+            check("static host explains where the numbers came from",
+                  "github action" in sp.text_content("#mkNote").lower(),
+                  sp.text_content("#mkNote")[:60])
+            check("static host shows the snapshot timestamp",
+                  "updated" in sp.text_content("#mktAsOf").lower(), sp.text_content("#mktAsOf")[:40])
+            check("static host is error-free", not serr, str(serr[:1]))
+            sctx.close()
+
             # ---------------------------------------------------------- desktop sanity
             print("\ndesktop")
             desk = browser.new_context(viewport={"width": 1280, "height": 800})

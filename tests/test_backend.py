@@ -21,6 +21,12 @@ import urllib.error
 import urllib.request
 from pathlib import Path
 
+
+def _sw():
+    """The service worker as shipped (built into the repo root next to index.html)."""
+    p = ROOT / "sw.js"
+    return p.read_text() if p.exists() else ""
+
 ROOT = Path(__file__).resolve().parent.parent
 PASS, FAIL = [], []
 
@@ -224,6 +230,22 @@ def main():
               meta["stats"]["seedDefs"] == sum(1 for s in meta["seeds"] if s["t"]))
 
         # ---------------------------------------------------------------- market (network optional)
+        # Kraken spells some pairs its own way (XXBTZUSD, XDGUSD). The fallback feed has to map
+        # those to tickers, or the app renders "XXBTZUSD" as a coin name — a bug that only ever
+        # appeared when CoinGecko was throttling, which is exactly when the fallback is in use.
+        print("\nmarket symbol mapping")
+        import importlib.util as _il
+        _spec = _il.spec_from_file_location("srv_under_test", ROOT / "server.py")
+        _srv = _il.module_from_spec(_spec)
+        _spec.loader.exec_module(_srv)
+        same = {"XXBTZUSD": "XBTUSD", "XETHZUSD": "ETHUSD", "XXRPZUSD": "XRPUSD",
+                "XLTCZUSD": "LTCUSD", "XDGUSD": "DOGEUSD", "SOLUSD": "SOLUSD",
+                "ADAUSD": "ADAUSD", "LINKUSD": "LINKUSD"}
+        mismatched = {k: (_srv.kraken_symbol(k), v) for k, v in same.items()
+                      if _srv.kraken_symbol(k) != _srv.kraken_symbol(v)}
+        check("kraken pair spellings normalise to the same key", not mismatched, str(mismatched))
+        check("no ticker is lost to a raw API key", _srv.kraken_symbol("XXBTZUSD") != "XXBTZUSD")
+
         try:
             pr = get("/api/prices", port)
             src = pr.get("source")
@@ -279,6 +301,28 @@ def main():
         for needle in ('"/api/health"', "/api/trending?limit=", "/api/seeds/validate",
                        "/api/progress", "sw.js", "paneWall", "renderTrending", "/api/event"):
             check(f"app source uses {needle}", needle in html)
+        # ---------------------------------------------------------------- static-host contract
+        # GitHub Pages cannot run Python, so the app must be fully usable with no backend:
+        # the committed market.json snapshot, then the public APIs straight from the browser.
+        print("\nstatic hosting")
+        check("app falls back to the committed market snapshot", "market.json" in html)
+        check("app can read the public APIs directly, with no server", "api.kraken.com" in html)
+        check("app reads the Fear & Greed index directly too", "alternative.me" in html)
+        check("app labels which of the three sources answered",
+              "browser-kraken" in html and "snapshot" in html)
+        check("service worker never serves prices from cache", "market.json" in _sw())
+        snap_path = ROOT / "market.json"
+        check("market.json is committed for the static host", snap_path.exists())
+        if snap_path.exists():
+            snap = json.loads(snap_path.read_text())
+            priced = [c for c in snap.get("coins", []) if c.get("price")]
+            check("snapshot carries real prices", len(priced) >= 8, f"{len(priced)} priced")
+            check("snapshot rows carry symbol, price and a timestamp",
+                  all(c.get("sym") and c.get("price") for c in priced) and snap.get("ts", 0) > 1_600_000_000)
+            check("snapshot has no invented placeholders",
+                  all(isinstance(c["price"], (int, float)) and c["price"] > 0 for c in priced))
+        runner = ROOT / "tools" / "market_snapshot.py"
+        check("the refresh script exists for the scheduled Action", runner.exists())
         check("app has the iOS no-zoom fix", "html.ios" in html and 'classList.add("ios")' in html)
         check("app registers the offline service worker", "serviceWorker" in html and "register" in html)
         total_kb = len(html.encode()) // 1024

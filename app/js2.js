@@ -279,7 +279,7 @@ function skelStats(){
   return '<div class="skel"></div><div class="skel"></div><div class="skel"></div><div class="skel"></div>';
 }
 async function renderMarketData(force){
-  if(!Net.online) return;
+  if(!Net.online && !navigator.onLine) return;
   if(!Net.prices) $("#mkStats").innerHTML = skelStats();
   var d = await Net.loadPrices(force);
   if(!d || !d.coins.length){
@@ -294,13 +294,26 @@ async function renderMarketData(force){
     '<div class="mkstat"><span>Tracked assets</span><b>'+(g.coins?fmt(g.coins):d.coins.length)+'</b></div>';
   $("#ggWrap").innerHTML = d.fearGreed ? gauge(d.fearGreed) : "";
   $("#coinGrid").innerHTML = d.coins.map(W.coinCard).join("");
-  $("#mkCount").textContent = d.source === "kraken" ? "kraken fallback" : "coingecko";
+  var SRC = String(d.source || "");
+  $("#mkCount").textContent = SRC === "snapshot" ? "market.json snapshot"
+                              : SRC.indexOf("coingecko") >= 0 ? "coingecko"
+                              : SRC.indexOf("kraken") >= 0 ? "kraken" : "public api";
   var note = $("#mkNote");
-  if(note) note.innerHTML = d.source === "kraken" ? (
-    '<div class="card glass" style="padding:11px 13px;font-size:12.6px;color:#c9d1e6;line-height:1.5">' +
-    ICON("i-bolt") + ' <b style="color:#fde68a">Backup feed.</b> Prices come straight from Kraken. Market cap, ' +
-    'dominance and the 7-day sparklines need CoinGecko, which is rate-limiting right now — the app keeps the last ' +
-    'good values instead of blanking the screen.</div>') : "";
+  var noteHtml = "";
+  if(SRC === "kraken" || SRC === "browser-kraken"){
+    noteHtml = ICON("i-bolt") + ' <b style="color:#fde68a">Backup feed.</b> Prices come straight from Kraken. ' +
+      'Market cap, dominance and the 7-day sparklines need CoinGecko, which is rate-limiting right now — the app ' +
+      'keeps the last good values instead of blanking the screen.';
+  }else if(SRC === "snapshot"){
+    noteHtml = ICON("i-bolt") + ' <b style="color:#a7f3d0">Static snapshot.</b> These prices came from ' +
+      '<b>market.json</b>, which a scheduled GitHub Action refreshes every 15 minutes — no server is running. ' +
+      'Timestamp: ' + esc(W.when(d.ts)) + '.';
+  }else if(SRC.indexOf("browser") === 0){
+    noteHtml = ICON("i-bolt") + ' <b style="color:#a7f3d0">Fetched by this device.</b> No server was involved: ' +
+      'the page read the public Kraken and alternative.me APIs directly. CoinGecko fields appear when it is not ' +
+      'rate-limiting your connection.';
+  }
+  if(note) note.innerHTML = noteHtml ? ('<div class="card glass" style="padding:11px 13px;font-size:12.6px;color:#c9d1e6;line-height:1.5">' + noteHtml + '</div>') : "";
   var sorted = d.coins.filter(function(c){ return c.chg !== null && c.chg !== undefined; });
   sorted.sort(function(a,b){ return Math.abs(b.chg) - Math.abs(a.chg); });
   $("#movers").innerHTML = sorted.slice(0,6).map(function(c){
@@ -310,7 +323,7 @@ async function renderMarketData(force){
       '<div class="go '+(up?"up":"down")+'" style="font-weight:740;font-size:13.5px">'+ICON(up?"i-trend-up":"i-trend-down")+(up?"+":"")+c.chg.toFixed(2)+'%</div></div>';
   }).join("");
   $("#mktAsOf").textContent = "updated " + W.when(d.ts);
-  $("#tickBadge").textContent = d.source === "kraken" ? "kraken" : "live";
+  $("#tickBadge").textContent = SRC.indexOf("coingecko") >= 0 ? "live" : SRC.indexOf("kraken") >= 0 ? "kraken" : "public";
   buildTicker(d.coins);
   if(ST.view === "home") W.refreshHomeMarket();
 }
@@ -519,7 +532,7 @@ async function renderAbout(){
       '<div class="kv"><span>Dictionary served</span><b>'+h.terms+' terms · '+h.categories+' categories</b></div>'+
       '<div class="kv"><span>Search engine</span><b>SQLite FTS5 (ranked, server-side)</b></div>'+
       '<div class="kv"><span>Seed list</span><b>'+h.seeds+' words · checksum validated server-side</b></div>'+
-      '<div class="kv"><span>Price data</span><b>'+(Net.prices && Net.prices.source === "kraken" ? "Kraken (fallback)" : "CoinGecko")+'</b></div>'+
+      '<div class="kv"><span>Price data</span><b>'+(function(src){src=String(src||"");return src.indexOf("coingecko")>=0?"CoinGecko":src.indexOf("snapshot")>=0?"market.json snapshot (GitHub Action)":src.indexOf("kraken")>=0?"Kraken (public API)":"public APIs";})(Net.prices && Net.prices.source)+'</b></div>'+
       (st ? ('<div class="kv"><span>Your device</span><b>'+esc(ST.uid.slice(0,14))+'</b></div>'+
              '<div class="kv"><span>Total API lookups</span><b>'+(st.counters.api_calls||0)+'</b></div>'+
              '<div class="kv"><span>Words read by everyone</span><b>'+(st.counters.words_read||0)+'</b></div>'+

@@ -1,0 +1,39 @@
+name: market snapshot
+
+# Keeps market.json fresh so the static Pages site shows live prices with no server running.
+# The file is committed rather than served from a process: Pages can only hand back files,
+# so a file is what it gets. Cost: one tiny job every 15 minutes, on a public repo.
+
+on:
+  schedule:
+    - cron: "*/15 * * * *"
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: market-snapshot
+  cancel-in-progress: false
+
+jobs:
+  refresh:
+    name: refresh market.json
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Fetch prices from the keyless public APIs
+        run: python3 tools/market_snapshot.py
+
+      - name: Commit only if the numbers actually moved
+        run: |
+          if git diff --quiet -- market.json; then
+            echo "market.json unchanged — nothing to commit"
+            exit 0
+          fi
+          git config user.name  "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add market.json
+          git commit -m "market: refresh $(date -u +'%Y-%m-%d %H:%M UTC')"
+          git push

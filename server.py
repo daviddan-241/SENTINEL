@@ -197,6 +197,20 @@ def _get(url, timeout=12):
         return json.loads(r.read().decode())
 
 
+def kraken_symbol(key):
+    """Kraken's own spellings to plain symbols: XXBTZUSD -> BTC, XDGUSD -> DOGE, SOLUSD -> SOL.
+
+    Kraken normalises some pairs (BTC, ETH, XRP, LTC carry an X prefix and a Z quote marker,
+    DOGE is XDG) and returns the rest plainly. Without this the fallback feed labelled those
+    four coins with the raw API key instead of a ticker — and only when CoinGecko was
+    throttled, which is exactly when the fallback is doing the work.
+    """
+    k = (key or "").upper()
+    if len(k) > 6 and k.startswith("X") and "ZUSD" in k:
+        k = k[1:].replace("ZUSD", "USD")
+    return k.replace("XBT", "BTC").replace("XDG", "DOGE")
+
+
 def fetch_prices():
     """CoinGecko first, Kraken as fallback. Always returns something usable."""
     out = {"source": "coingecko", "coins": [], "global": {}, "fearGreed": None, "ts": int(time.time())}
@@ -216,11 +230,21 @@ def fetch_prices():
             pairs = {"BTC":"XBTUSD","ETH":"ETHUSD","SOL":"SOLUSD","XRP":"XRPUSD","ADA":"ADAUSD",
                      "DOGE":"XDGUSD","LINK":"LINKUSD","LTC":"LTCUSD","DOT":"DOTUSD","AVAX":"AVAXUSD"}
             t = _get("https://api.kraken.com/0/public/Ticker?pair=" + ",".join(pairs.values()))["result"]
-            rev = {v: k for k, v in pairs.items()}
-            for key, v in t.items():
-                sym = rev.get(key) or next((s for s in rev if key.startswith(s[:3])), key)
-                out["coins"].append({"id": sym.lower(), "sym": sym, "name": sym,
-                                     "price": float(v["c"][0]), "chg": None, "spark": [], "cap": None, "vol": None})
+            names = {c[1]: c[2] for c in COINS}
+            by_pair = {kraken_symbol(k): v for k, v in t.items()}
+            seen = set()
+            for sym, pair in pairs.items():
+                v = by_pair.get(kraken_symbol(pair))
+                if not v or not v.get("c") or sym in seen:
+                    continue
+                seen.add(sym)
+                last = float(v["c"][0])
+                opened = float(v.get("o") or last)
+                out["coins"].append({"id": sym.lower(), "sym": sym, "name": names.get(sym, sym),
+                                     "price": last,
+                                     "chg": round((last - opened) / opened * 100, 2) if opened else None,
+                                     "spark": [], "cap": None,
+                                     "vol": float(v["v"][1]) * last if v.get("v") else None})
         except Exception as e2:
             out["error"] = f"coingecko: {e}; kraken: {e2}"
     # global stats + sentiment change slowly and are rate-limited upstream: refresh every 5 min,

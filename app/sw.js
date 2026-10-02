@@ -3,8 +3,8 @@
    Only one job: keep the app itself available when there is no network.
 
    * navigations and .html  -> network first, cache fallback (always fresh when online)
-   * /api/ or cross-origin  -> never touched, the app already handles offline itself
-   * everything else        -> cache first, refreshed in the background
+   * /api/, market.json or
+     cross-origin           -> never touched, the app already handles offline itself
    ========================================================================= */
 var VERSION = "__VERSION__";
 var CACHE = "wordvault-" + VERSION;
@@ -38,6 +38,7 @@ self.addEventListener("fetch", function(e){
   try{ url = new URL(req.url); }catch(err){ return; }
   if(url.origin !== self.location.origin) return;            /* prices are fetched by the server, not the page */
   if(url.pathname.indexOf("/api/") >= 0) return;             /* live data must never come from a cache */
+  if(url.pathname.indexOf("market.json") >= 0) return;       /* same: prices, even when they arrive as a file */
 
   var isDoc = req.mode === "navigate" ||
               /\.html?$/.test(url.pathname) ||

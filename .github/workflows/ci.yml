@@ -3,6 +3,10 @@ name: CI
 on:
   push:
     branches: [main]
+    # market.json is rewritten by the scheduled snapshot job every 15 minutes. It is data,
+    # not source, so a refresh must not spend three CI runners re-testing unchanged code.
+    paths-ignore:
+      - market.json
   pull_request:
   workflow_dispatch:
 

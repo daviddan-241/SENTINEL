@@ -104,7 +104,11 @@ var Net = {
         return true;
       }
     }catch(e){}
-    NetUI(false, "offline library");
+    // No backend. That no longer means no live data: the static snapshot and the public APIs
+    // can both feed the market screen, so say which of those is actually happening.
+    var market = null;
+    try{ market = await this.loadPrices(true); }catch(e){}
+    NetUI(false, market && market.coins.length ? "static host · live market" : "offline library");
     this.booted = true;
     return false;
   },
@@ -157,14 +161,99 @@ var Net = {
     if(this.queued){ this.queued = false; this.pushProgress(); }
     if($("#syncInfo")) refreshSyncLabel();
   },
+  // Market data has three possible homes, tried in order of how much infrastructure is awake:
+  //   1. the backend, when one is deployed and reachable
+  //   2. market.json in the repo — a static file refreshed by a scheduled GitHub Action
+  //   3. the public APIs straight from this browser (Kraken and alternative.me for prices and
+  //      sentiment, CoinGecko opportunistically for caps and sparklines)
+  // On GitHub Pages only 2 and 3 exist, and the app is fully usable there because of them.
+  marketMode: "none",
   async loadPrices(force){
-    if(!this.online || !ST.live) return null;
+    if(!ST.live) return null;
     if(!force && this.prices && Date.now() - this.priceTs < 50000) return this.prices;
+    var got = null;
+    if(this.online){
+      try{
+        var d = await this.req("GET", "/api/prices", null, 9000);
+        if(d && d.coins && d.coins.length){ got = d; this.marketMode = "backend"; }
+      }catch(e){}
+    }
+    if(!got){
+      try{
+        var snap = await this.req("GET", "market.json?v=" + Math.floor(Date.now()/60000), null, 6000, true);
+        if(snap && snap.coins && snap.coins.length){ got = snap; this.marketMode = "snapshot"; }
+      }catch(e){}
+    }
+    if(!got){
+      try{
+        var direct = await this.marketDirect();
+        if(direct && direct.coins && direct.coins.length){ got = direct; this.marketMode = "direct"; }
+      }catch(e){}
+    }
+    if(got){ this.prices = got; this.priceTs = Date.now(); }
+    return this.prices || null;
+  },
+  // No proxy, no key: Kraken's public ticker reflects the browser's origin, so a static page
+  // can read it directly. XBT and XDG are Kraken's spellings of BTC and DOGE.
+  async marketDirect(){
+    var PAIRS = [["BTC","XBTUSD"],["ETH","ETHUSD"],["SOL","SOLUSD"],["BNB","BNBUSD"],["XRP","XRPUSD"],
+                 ["ADA","ADAUSD"],["DOGE","XDGUSD"],["TRX","TRXUSD"],["LINK","LINKUSD"],
+                 ["AVAX","AVAXUSD"],["DOT","DOTUSD"],["LTC","LTCUSD"]];
+    var NAMES = {BTC:"Bitcoin",ETH:"Ethereum",SOL:"Solana",BNB:"BNB",XRP:"XRP",ADA:"Cardano",
+                 DOGE:"Dogecoin",TRX:"Tron",LINK:"Chainlink",AVAX:"Avalanche",DOT:"Polkadot",LTC:"Litecoin"};
+    function norm(k){
+      k = k.toUpperCase();
+      if(k.length > 6 && k.charAt(0) === "X" && k.indexOf("ZUSD") > 0) k = k.slice(1).replace("ZUSD","USD");
+      return k.replace("XBT","BTC").replace("XDG","DOGE");
+    }
+    var out = { source:"browser", coins:[], global:{}, fearGreed:null, ts:Math.floor(Date.now()/1000) };
+    var seen = {};
     try{
-      var d = await this.req("GET", "/api/prices", null, 9000);
-      if(d && d.coins && d.coins.length){ this.prices = d; this.priceTs = Date.now(); }
-      return this.prices;
-    }catch(e){ return this.prices; }
+      var kr = await (await fetch("https://api.kraken.com/0/public/Ticker?pair=" +
+                PAIRS.map(function(p){ return p[1]; }).join(","))).json();
+      var res = kr.result || {};
+      var byPair = {}; Object.keys(res).forEach(function(k){ byPair[norm(k)] = res[k]; });
+      PAIRS.forEach(function(p){
+        var v = byPair[norm(p[1])];
+        if(!v || !v.c) return;
+        var last = parseFloat(v.c[0]), open = parseFloat(v.o || v.c[0]);
+        out.coins.push({ id:p[0].toLowerCase(), sym:p[0], name:NAMES[p[0]],
+                         price:last, chg: open ? Math.round((last-open)/open*10000)/100 : null,
+                         cap:null, vol: v.v ? parseFloat(v.v[1])*last : null, spark:[] });
+        seen[p[1]] = 1;
+      });
+      if(out.coins.length) out.source = "browser-kraken";
+    }catch(e){}
+    try{
+      var fg = await (await fetch("https://api.alternative.me/fng/?limit=1")).json();
+      if(fg && fg.data && fg.data[0])
+        out.fearGreed = { value: parseInt(fg.data[0].value,10), label: fg.data[0].value_classification };
+    }catch(e){}
+    try{
+      var mk = await (await fetch("https://api.coingecko.com/api/v3/coins/markets?vs_currency=usd&ids=" +
+               PAIRS.map(function(p){ return p[0].toLowerCase(); }).join(",") +
+               "&price_change_percentage=24h&sparkline=true")).json();
+      if(mk && mk.length){
+        var byId = {}; out.coins.forEach(function(c){ byId[c.id] = c; });
+        mk.forEach(function(c){
+          var t = byId[c.id];
+          if(!t) return;
+          t.price = c.current_price; t.chg = Math.round((c.price_change_percentage_24h||0)*100)/100;
+          t.cap = c.market_cap; t.vol = c.total_volume; t.name = c.name;
+          t.spark = ((c.sparkline_in_7d||{}).price||[]).map(function(x){ return Math.round(x*1e6)/1e6; })
+                      .filter(function(_,i){ return i%8 === 0; }).slice(0,40);
+        });
+        out.source = "browser-coingecko";
+      }
+    }catch(e){}
+    try{
+      var g = await (await fetch("https://api.coingecko.com/api/v3/global")).json();
+      if(g && g.data) out.global = { mcap:g.data.total_market_cap.usd, vol:g.data.total_volume.usd,
+        btcDom:Math.round(g.data.market_cap_percentage.btc*10)/10,
+        ethDom:Math.round(g.data.market_cap_percentage.eth*10)/10,
+        coins:g.data.active_cryptocurrencies };
+    }catch(e){}
+    return out;
   },
   async search(q, cat, level, limit){
     if(!this.online) return null;

@@ -1,15 +1,46 @@
-# Deploy: Render (free) + UptimeRobot
+# Deploy
 
-The app is one self-contained HTML file, so it runs with **no server at all** — GitHub Pages already
-serves it at `https://daviddan-241.github.io/SENTINEL/`. The backend only adds live prices, cross-device
-progress and real-usage trending. This page is the whole deploy, start to finish.
+**There is nothing you have to run.** The app is one self-contained HTML file, live prices arrive
+two different ways without a server, and both are already wired up in this repository.
+
+| Layer | What it is | Needs |
+|---|---|---|
+| The app | `https://daviddan-241.github.io/SENTINEL/` | nothing — GitHub Pages serves it |
+| Live prices | `market.json`, refreshed every 15 min by a scheduled GitHub Action | nothing — runs in your own repo |
+| Prices, if the snapshot is stale | the page reads Kraken and alternative.me directly | nothing — keyless public APIs, CORS-open |
+| Cross-device sync, real-usage trending | the Python backend | optional, any host |
+
+So GitHub is the whole deployment. The backend below is optional, and if you never deploy it the
+only things missing are sync between devices and the "what people actually read" ranking.
+
+## How the no-server market works
+
+`tools/market_snapshot.py` asks the public keyless APIs what things cost and writes `market.json`;
+`.github/workflows/market.yml` runs it every 15 minutes and commits the result if the numbers
+moved. Pages serves that file like any other asset, and the app reads it before it ever tries a
+server. If the file is missing or stale, the app falls back to calling Kraken and alternative.me
+from the browser itself — CoinGecko when it is not throttling.
+
+That is why the app is fully usable on a static host: three sources, tried in order, and the
+screen always states which one answered. Nothing is invented to fill a gap — a field that cannot
+be fetched renders as a dash.
+
+Prices come from CoinGecko (caps, dominance, 7-day sparklines) and Kraken (every price, today's
+open, volume). CoinGecko throttles shared IPs without warning, which is why Kraken is the
+backbone and a 429 is not an outage.
+
+---
+
+## Optional backend: Render (free) + UptimeRobot
+
+Everything from here down is only needed for server-side sync and trending.
 
 Nothing here needs a key, a secret or a paid plan. There is nothing to put in an environment variable
 except the port Render sets for you.
 
 ---
 
-## 1. Render
+## 1. Render (optional)
 
 `render.yaml` is a Blueprint, so Render reads the service definition from the repo.
 
@@ -91,7 +122,7 @@ from the environment, so there is nothing to hard-code.
 
 ---
 
-## Coolify / a VPS, if you would rather not use Render
+## Coolify / a VPS, if you would rather not use Render at all
 
 ```bash
 git clone https://github.com/daviddan-241/SENTINEL && cd SENTINEL
@@ -113,4 +144,6 @@ which is exactly why it deploys anywhere Python runs.
 | Health says `"db": false` | Fresh instance, no DB file yet | It is created on the first write; harmless |
 | `"market": false` | Price cache not warm yet | It fills on first `/api/prices` call |
 | Monitor shows 522/503 | Instance was spun down and the check timed out mid-wake | Set the monitor's timeout to 60 s, or accept one alert at wake-up |
-| App shows "offline library" | Backend URL not set, or the service slept | Set it in Drawer → About → Backend |
+| App shows "offline library" | Page opened from disk with no network, and no snapshot beside it | Normal: every word and trainer still works |
+| App shows "static host · live market" | Working as designed — prices came from `market.json` or the public APIs, no server involved | Nothing to fix |
+| Market screen says "Backup feed" | CoinGecko is throttling; Kraken carried the prices | Nothing to fix; caps and sparklines return when it eases |
