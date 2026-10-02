@@ -152,6 +152,18 @@ three tabs, the word wall, saving and learning words, trending filling up from *
 reads on a cold database, the offline fallback, and a **total network blackout** that the
 service worker survives. It fails on any console error.
 
+## Run it without installing anything
+
+| What | How |
+|---|---|
+| **Use the app** | [daviddan-241.github.io/SENTINEL](https://daviddan-241.github.io/SENTINEL/) — prices included, no server |
+| **Scan an address** | Actions → **scan** → Run workflow → paste one public address → report in the run summary |
+| **Run the crypto core** | Code → **Codespaces** → Create codespace → `cd ios && swift test` (93 tests, no Mac needed) |
+| **Serve the API** | optional — `python3 server.py 8000` locally, or see [DEPLOY.md](DEPLOY.md) |
+
+The scan workflow takes **addresses only**; anything containing whitespace is refused, because a
+workflow input is public and a recovery phrase must never go into one.
+
 ## Project structure
 
 ```
@@ -169,6 +181,8 @@ tests/                    backend suite + browser end-to-end suite
 docs/screenshots/         the images in this README
 tools/push.sh             push helper that never stores a token in the repo
 
+.devcontainer/            Swift 6.2 container: build and test the core in a browser tab
+.github/workflows/        CI, the 15-minute market snapshot, and scan-on-demand
 ios/                      the native app — see ios/README.md
   SentinelWallet/         SwiftUI app: design system, features, security gates, app state
   Core/                   Foundation-only core: crypto, wallet, vault, chain clients

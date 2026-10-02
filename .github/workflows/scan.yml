@@ -1,0 +1,90 @@
+name: scan
+
+# Run a real portfolio scan from the Actions tab — no Mac, no terminal, no install.
+# Actions → scan → Run workflow → paste one public address → read the report in the run summary.
+#
+# Addresses only. A recovery phrase is never accepted here and must never be typed into a
+# workflow input: inputs are visible to anyone who can read the repository, and logs are kept.
+
+on:
+  workflow_dispatch:
+    inputs:
+      address:
+        description: 'One public address — Bitcoin, 0x… EVM, or Solana. Never a seed phrase.'
+        required: true
+        type: string
+
+permissions:
+  contents: read
+
+concurrency:
+  group: scan-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  scan:
+    name: scan an address
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Refuse anything that looks like a recovery phrase
+        env:
+          ADDRESS: ${{ inputs.address }}
+        run: |
+          set -euo pipefail
+          trimmed="$(printf '%s' "$ADDRESS" | tr -d '[:space:]')"
+          if [ -z "$trimmed" ]; then
+            echo "::error::No address given."
+            exit 1
+          fi
+          if [ "$trimmed" != "$ADDRESS" ]; then
+            echo "::error::That input contains whitespace, so it looks like a phrase or a sentence. This workflow accepts one public address only — never a recovery phrase. Cancel this run and, if you typed a real phrase here, move those funds to a new wallet: the value is now in a public place."
+            exit 1
+          fi
+          case "$ADDRESS" in
+            *,*) echo "::error::One address only."; exit 1 ;;
+          esac
+          echo "Accepted a single token with no whitespace. The CLI will reject it if it is not a valid address."
+
+      - name: Install Swift 6.2
+        run: |
+          curl -sSL -o swift.tar.gz https://download.swift.org/swift-6.2-release/ubuntu2404/swift-6.2-RELEASE/swift-6.2-RELEASE-ubuntu24.04.tar.gz
+          mkdir -p "$HOME/swift"
+          tar xzf swift.tar.gz -C "$HOME/swift" --strip-components=1
+          echo "$HOME/swift/usr/bin" >> "$GITHUB_PATH"
+
+      - name: Cache the SwiftPM checkout
+        uses: actions/cache@v4
+        with:
+          path: ios/.build
+          key: swiftpm-${{ runner.os }}-${{ hashFiles('ios/Package.swift') }}
+
+      - name: Build the scanner
+        working-directory: ios
+        run: swift build -c release --product sentinel
+
+      - name: Read the chain and write the report
+        working-directory: ios
+        env:
+          ADDRESS: ${{ inputs.address }}
+        run: |
+          set +e
+          ./.build/release/sentinel scan "$ADDRESS" --json > /tmp/report.json 2> /tmp/err.txt
+          code=$?
+          set -e
+          [ -s /tmp/err.txt ] && cat /tmp/err.txt
+          python3 ../tools/scan_summary.py /tmp/report.json >> "$GITHUB_STEP_SUMMARY"
+          if [ "$code" -ne 0 ]; then
+            echo "::error::The scan failed (exit $code). The summary above says what the providers answered."
+            exit "$code"
+          fi
+
+      - name: Keep the raw JSON
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: sentinel-scan
+          path: /tmp/report.json
+          if-no-files-found: warn

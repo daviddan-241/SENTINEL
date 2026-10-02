@@ -1,0 +1,23 @@
+{
+  "name": "SENTINEL — Swift core, CLI and web app",
+  "image": "swift:6.2-noble",
+  "hostRequirements": {
+    "cpus": 2,
+    "memory": "8gb",
+    "storage": "16gb"
+  },
+  "postCreateCommand": "bash -c 'apt-get update -qq >/dev/null 2>&1 && apt-get install -y -qq python3 >/dev/null 2>&1 || true; cd ios && swift package resolve'",
+  "customizations": {
+    "vscode": {
+      "extensions": [
+        "swiftlang.swift-vscode"
+      ],
+      "settings": {
+        "swift.autoGeneratePackage": false,
+        "files.exclude": {
+          "**/.build": true
+        }
+      }
+    }
+  }
+}

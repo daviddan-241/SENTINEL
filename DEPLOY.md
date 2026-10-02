@@ -31,6 +31,35 @@ backbone and a 429 is not an outage.
 
 ---
 
+## Running things from GitHub, with nothing installed
+
+### Scan an address (no install, no Mac)
+
+**Actions → scan → Run workflow → paste one public address.** The run builds the scanner, reads
+the real chains, and writes the report into the run summary: balance, USD value, provider list,
+transaction count, tokens, and the verification verdict. The raw JSON is kept as an artifact.
+
+It accepts **addresses only**. If the input contains whitespace it is treated as a phrase and
+refused — workflow inputs are visible to anyone who can read the repository, so a recovery phrase
+must never go in one, and the failure message says exactly that.
+
+```bash
+# the same thing locally, if you ever want it
+cd ios && swift run sentinel scan 1A1zP1eP5QGefi2DMPTfTL5SLmv7DivfNa
+```
+
+### Build and test the crypto core (no Xcode)
+
+The core is a plain SwiftPM package, so a Codespace can compile it: **Code → Codespaces → Create
+codespace on main**, then `cd ios && swift test` — 93 tests over the official BIP-39/32/44/49/84/86
+vectors. Free accounts get 120 core-hours a month.
+
+Xcode is still required for the SwiftUI app target, and `ios/README.md` says so rather than
+pretending otherwise. Everything the app does *underneath* — every key derivation, every vault
+operation, every chain decode — builds and tests in that container.
+
+---
+
 ## Optional backend: Render (free) + UptimeRobot
 
 Everything from here down is only needed for server-side sync and trending.
