@@ -117,6 +117,22 @@ def main():
         check("health counts match the build", h["terms"] == len(terms) and h["seeds"] == 2048,
               f"{h['terms']} / {h['seeds']}")
 
+        # the endpoint an uptime monitor should use: alive, uncached, and free of side effects
+        ping = get("/api/ping", port)
+        check("ping answers with ok + a millisecond stamp",
+              ping["ok"] and isinstance(ping["pong"], int) and ping["pong"] > 1_600_000_000_000,
+              json.dumps(ping))
+        with urllib.request.urlopen(f"http://127.0.0.1:{port}/ping") as r:
+            check("ping is also served at /ping for simple monitors", json.loads(r.read())["ok"])
+        with urllib.request.urlopen(f"http://127.0.0.1:{port}/api/ping") as r:
+            check("ping is not cacheable (a monitor must see a live answer)",
+                  "no-store" in r.headers.get("Cache-Control", ""), r.headers.get("Cache-Control"))
+        started = time.time()
+        for _ in range(20):
+            get("/api/ping", port)
+        avg_ms = (time.time() - started) / 20 * 1000
+        check("ping stays cheap (under 25 ms average over 20 calls)", avg_ms < 25, f"{avg_ms:.1f} ms")
+
         # ---------------------------------------------------------------- dictionary
         res = get("/api/terms?q=staking", port)
         check("ranked search finds staking", res["total"] > 0 and res["engine"] == "fts5", res["total"])

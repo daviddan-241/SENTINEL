@@ -78,8 +78,29 @@ docker build -t wordvault . && docker run -p 8000:8000 -v wordvault-data:/data w
 ```
 
 * **GitHub Pages** serves `index.html`, so the repo URL is also a working app (offline library mode — prices and sync need the backend).
-* **Render** — `render.yaml` is ready; the free plan is enough for the API.
+* **Render** — `render.yaml` is a Blueprint: **New → Blueprint → this repo → Apply**, free plan, done.
+* **UptimeRobot** — point one monitor at `/api/ping` every 5 minutes. That is a 61-byte, uncached,
+  side-effect-free answer, and on Render's free plan it also keeps the instance from spinning down.
 * `PORT` and `WORDVAULT_DB` are read from the environment, so any host works.
+
+Full walkthrough, including what the free plan does and does not keep, is in **[DEPLOY.md](DEPLOY.md)**.
+
+```bash
+curl -s http://localhost:8000/api/ping      # {"ok":true,"pong":...,"version":"3.0"}
+```
+
+## Deploy & monitoring
+
+| Step | Where | What |
+|---|---|---|
+| 1 | [dashboard.render.com](https://dashboard.render.com) | New → Blueprint → `daviddan-241/SENTINEL` → Apply. Reads `render.yaml`; free plan |
+| 2 | [uptimerobot.com](https://uptimerobot.com) | New monitor → Keyword → `https://YOUR-APP.onrender.com/api/ping` → keyword `pong` → every 5 min |
+| 3 | The app | Drawer → About → Backend → paste the service URL |
+
+`/api/ping` exists for exactly this: it touches no database, no file and no cache, so monitoring
+costs nothing and a sleeping free instance wakes on the lightest possible request. `/api/health` is
+the detailed one — counts, database state, whether the market cache is warm — and Render's own
+health check already uses it.
 
 ## The API
 

@@ -374,6 +374,13 @@ class Handler(BaseHTTPRequestHandler):
 
     def route(self, p, q, method):
         bump("api_calls")
+        # ---- uptime monitors: the cheapest possible answer.
+        # /api/ping touches no database, no file and no cache — it is the endpoint to point a
+        # monitor (UptimeRobot, Render's own health check, cron+curl) at, so waking a sleeping
+        # free instance stays fast and monitoring never costs work.
+        if p in ("/api/ping", "/ping"):
+            return self.send_json({"ok": True, "pong": int(time.time() * 1000),
+                                   "version": VERSION, "uptime_s": round(time.time() - START)})
         # ---- health / meta
         if p == "/api/health":
             return self.send_json({"ok": True, "version": VERSION, "terms": len(TERMS), "seeds": len(BIP39),
@@ -525,7 +532,7 @@ class Handler(BaseHTTPRequestHandler):
             return self.send_file(ROOT / "WordVault-wordlist.md")
         if p == "/api":
             return self.send_json({"endpoints": [
-                "GET /api/health", "GET /api/meta", "GET /api/stats",
+                "GET /api/ping", "GET /api/health", "GET /api/meta", "GET /api/stats",
                 "GET /api/terms?q=&cat=&level=&offset=&limit=&sort=", "GET /api/terms/{name}",
                 "GET /api/categories", "GET /api/random",
                 "GET /api/seeds?q=&offset=&limit=", "POST /api/seeds/validate", "POST /api/seeds/generate",
