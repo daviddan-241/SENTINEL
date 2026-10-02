@@ -248,6 +248,35 @@ def main():
             page.unroute("**/mempool.space/**")
             page.unroute("**/blockstream.info/**")
 
+            # regression: a Bitcoin scan used to leave the Bitcoin config in place, so the next
+            # EVM address was read from mempool.space and came back HTTP 400
+            evm_payload = json.dumps({"coin_balance": "5715987139328012679", "exchange_rate": "2760.24",
+                                      "is_contract": False, "hash": "0xd8dA6BF26964aF9D7eEd9e03E53415D37aA96045"})
+            rpc_payload = json.dumps([{"jsonrpc": "2.0", "id": 1, "result": "0x4f58c9f0a5b1e1a67"},
+                                      {"jsonrpc": "2.0", "id": 2, "result": "0x1ebf"}])
+            page.route("**/blockscout.com/**", lambda r: r.fulfill(status=200, content_type="application/json", body=evm_payload))
+            page.route("**/publicnode.com/**", lambda r: r.fulfill(status=200, content_type="application/json", body=rpc_payload))
+            page.fill("#wAddr", "0xd8dA6BF26964aF9D7eEd9e03E53415D37aA96045")
+            page.click("#wScan")
+            page.wait_for_timeout(3000)
+            evm_body = page.text_content("#wResult")
+            check("after a Bitcoin scan, an EVM address is read as an EVM address",
+                  "ETH" in evm_body and "mempool.space" not in evm_body, evm_body[:50])
+            check("an EVM address is checked against the explorer and the node",
+                  "explorer" in evm_body and "node" in evm_body)
+            # note: the host is eth.blockscout.com, so the glob must not require a "/" right
+            # before "blockscout" — matching on the path is what works
+            page.route("**/token-balances", lambda r: r.fulfill(status=200, content_type="application/json",
+                       body=json.dumps([{"token": {"symbol": "PEPEF", "name": "pepefork.vip", "decimals": "18", "reputation": "ok"}, "value": "1"},
+                                        {"token": {"symbol": "WHITE", "name": "WhiteRock", "decimals": "18", "exchange_rate": "0.00003322", "reputation": "ok"}, "value": "10000000000000000000000000000"}])))
+            page.click('#wResult [data-act="tokens"]')
+            page.wait_for_timeout(3000)
+            tok_body = page.text_content("#wResult")
+            check("token holdings list on demand", "WhiteRock" in tok_body or "Biggest holdings" in tok_body, tok_body[:60])
+            check("a token whose name is a link is flagged as junk", "Flagged as junk" in tok_body and "pepefork.vip" in tok_body)
+            page.unroute("**/blockscout.com/**")
+            page.unroute("**/publicnode.com/**")
+
             # harder case: no network at all — the worker must serve the app shell
             ctx.route("**/*", lambda r: r.abort())
             page.reload(wait_until="domcontentloaded")

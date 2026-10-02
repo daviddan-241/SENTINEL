@@ -2971,7 +2971,7 @@ var VERIFY = {
   unavailable: { cls:"r", label:"Could not check",  note:"no provider answered; this is not the same as an empty wallet" }
 };
 
-var state = { report:null, cfg:chain("ethereum"), busy:false, tokens:null, tokensBusy:false, family:null };
+var state = { report:null, evm:"ethereum", busy:false, tokens:null, tokensBusy:false, family:null };
 
 function chipRow(family){
   // Always visible: the six EVM chains share one address, so which chain to read is a real
@@ -2982,7 +2982,7 @@ function chipRow(family){
   if (family === "btc" || family === "sol")
     return label;
   return label + '<div class="filters">' + CHAINS.filter(function(c){ return c.kind === "evm"; }).map(function(c){
-    return '<button class="chip' + (c.id === state.cfg.id ? " on" : "") + '" data-chain="' + c.id + '">' + esc(c.name) + '</button>';
+    return '<button class="chip' + (c.id === state.evm ? " on" : "") + '" data-chain="' + c.id + '">' + esc(c.name) + '</button>';
   }).join("") + '</div>';
 }
 
@@ -2995,7 +2995,8 @@ function reportCard(r){
   rows += '<div class="kv"><span>Value</span><b>' + usdText(r.usd) + '</b></div>';
   if (r.price) rows += '<div class="kv"><span>Price</span><b>' + usdText(r.price) + (r.priceFrom === "explorer" ? " (explorer)" : " (Kraken)") + '</b></div>';
   if (r.txCount !== undefined && r.txCount !== null) rows += '<div class="kv"><span>Transactions</span><b>' + W.fmt(r.txCount) + '</b></div>';
-  if (r.isContract !== null) rows += '<div class="kv"><span>Type</span><b>' + (r.isContract ? "Contract" : "Wallet") + '</b></div>';
+  if (r.isContract === true || r.isContract === false)
+    rows += '<div class="kv"><span>Type</span><b>' + (r.isContract ? "Contract" : "Wallet") + '</b></div>';
   rows += '<div class="kv"><span>Providers</span><b>' + (r.providers.length ? esc(r.providers.join(" · ")) : "none answered") + '</b></div>';
   if (r.raw !== null && r.decimals <= 18) rows += '<div class="kv"><span>Base units</span><b class="mono">' + esc(String(r.raw)) + '</b></div>';
   return '<div class="card glass wres">' +
@@ -3029,7 +3030,10 @@ function tokensCard(){
   }).join("");
   var junk = t.flagged.length ? '<h2 class="sec">Flagged as junk <span class="n">' + t.flagged.length + '</span></h2>' +
     '<div class="card glass">' + t.flagged.slice(0, 10).map(function(x){
-      return '<div class="kv"><span>' + esc((x.symbol || "?").slice(0, 12)) + '</span><b class="wjunk">' + esc(x.reason || "matched the spam patterns") + '</b></div>';
+      // the name is shown too: it is where the lure usually lives ("pepefork.vip"), so hiding it
+      // would make the flag harder to trust
+      var label = esc((x.symbol || "?").slice(0, 12)) + (x.name ? ' <i style="opacity:.65;font-style:normal">' + esc(x.name.slice(0, 24)) + '</i>' : "");
+      return '<div class="kv"><span>' + label + '</span><b class="wjunk">' + esc(x.reason || "matched the spam patterns") + '</b></div>';
     }).join("") + (t.flagged.length > 10 ? '<div class="kv"><span>…and ' + (t.flagged.length - 10) + ' more</span><b></b></div>' : "") + '</div>' : "";
   return head + (top ? '<h2 class="sec">Biggest holdings</h2><div class="list">' + top + '</div>' : "") + junk;
 }
@@ -3099,8 +3103,7 @@ function klassify(raw){
       return;
     }
     state.family = c.family;
-    var cfg = c.family === "evm" ? state.cfg : chain(c.family === "btc" ? "bitcoin" : "solana");
-    state.cfg = cfg;
+    var cfg = c.family === "evm" ? chain(state.evm) : chain(c.family === "btc" ? "bitcoin" : "solana");
     state.report = null; state.tokens = null; state.busy = true;
     renderWallet();
     scan(c.address, cfg).then(function(r){
@@ -3122,7 +3125,7 @@ function wire(host){
   host.addEventListener("click", function(e){
     var chip = e.target.closest("[data-chain]");
     if (chip){
-      state.cfg = chain(chip.getAttribute("data-chain"));
+      state.evm = chip.getAttribute("data-chain");
       if (state.report && state.report.family === "evm") klassify(state.report.address);
       else renderWallet();
       return;
@@ -3156,7 +3159,12 @@ function wire(host){
       var i = Number(row.getAttribute("data-i"));
       var items = load();
       var it = items[i];
-      if (it){ $("#wAddr").value = it.a; state.cfg = chain(it.c); klassify(it.a); }
+      if (it){
+        var clicked = chain(it.c);
+        if (clicked.kind === "evm") state.evm = clicked.id;
+        $("#wAddr").value = it.a;
+        klassify(it.a);
+      }
     }
   });
 }
