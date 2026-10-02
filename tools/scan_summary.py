@@ -18,11 +18,22 @@ import json
 import sys
 from pathlib import Path
 
+# The exact raw values of Verification and ScanState in Core/Chain/ChainModels.swift, read from
+# the source rather than guessed: an unlisted value still prints, it just gets no sentence.
 VERIFICATION_NOTE = {
-    "confirmed": "two independent providers agreed",
-    "singleSource": "only one provider answered",
-    "unverified": "providers disagreed — excluded from totals",
-    "unreachable": "no provider answered",
+    "agreed": "two independent providers returned the same balance",
+    "singleSource": "only one provider could answer — shown as unconfirmed",
+    "disagreed": "providers differ — this address is excluded from any total",
+    "unavailable": "nothing answered; absence of data is not absence of funds",
+}
+STATE_NOTE = {
+    "funded": "holds a balance right now",
+    "active": "nothing now, but the address has history",
+    "empty": "the chain answered and everything is zero",
+    "unused": "the chain says this address was never used",
+    "invalid": "could not be derived, or the chain rejected it",
+    "verifying": "providers disagree — not safe to total up",
+    "unavailable": "no provider answered",
 }
 
 
@@ -53,7 +64,8 @@ def one(report, out):
     out.append(f"| Balance | **{amount(report.get('native_amount'))} {sym}** ({report.get('native', '—')} base units) |")
     out.append(f"| Value | {money(report.get('usd_value'))}"
                + (f" · price {money(report.get('usd_price'))}" if report.get("usd_price") else "") + " |")
-    out.append(f"| State | {state} |")
+    state_note = STATE_NOTE.get(state, "")
+    out.append(f"| State | {state}{f' — {state_note}' if state_note else ''} |")
     note = VERIFICATION_NOTE.get(verif, "")
     out.append(f"| Verification | {verif}{f' — {note}' if note else ''} |")
     out.append(f"| Providers | {', '.join(report.get('providers') or []) or '—'} |")

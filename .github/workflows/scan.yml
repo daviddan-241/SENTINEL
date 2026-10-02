@@ -75,6 +75,9 @@ jobs:
           code=$?
           set -e
           [ -s /tmp/err.txt ] && cat /tmp/err.txt
+          echo "--- what the providers answered ---"
+          cat /tmp/report.json
+          echo "--- end of report ---"
           python3 ../tools/scan_summary.py /tmp/report.json >> "$GITHUB_STEP_SUMMARY"
           if [ "$code" -ne 0 ]; then
             echo "::error::The scan failed (exit $code). The summary above says what the providers answered."
