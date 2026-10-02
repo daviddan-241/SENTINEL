@@ -1,6 +1,6 @@
 "use strict";
 /* =========================================================================
-   WordVault v2 — seeds trainer, live market, pulse, vault, safety, about
+   WordVault v2 — seeds trainer, live market, vault, about
    ========================================================================= */
 (function(){
 var W = window.WV;
@@ -389,23 +389,6 @@ function open2(html){ W.openSheet(html); haptic(); }
    PULSE
    ===================================================================== */
 var qFilter = "All";
-function renderPulse(){
-  var cats = ["All","Catchphrases","Wisdom","Safety","Market"];
-  $("#quoteFilters").innerHTML = cats.map(function(c){
-    return '<button class="s'+(qFilter===c?" on":"")+'" data-qc="'+c+'">'+c+'</button>'; }).join("");
-  $$("#quoteFilters .s").forEach(function(b){ b.addEventListener("click", function(){ qFilter = b.dataset.qc; renderPulse(); haptic(); }); });
-  var list = QUOTES.filter(function(q){ return qFilter === "All" || q.c === qFilter; });
-  var daily = QUOTES[W.dailyPick(QUOTES.length, 5)];
-  var html = "";
-  if(qFilter === "All"){
-    html += '<h2 class="sec">Quote of the day</h2><div class="quote card" data-quote="'+esc(daily.t)+'" style="background:linear-gradient(150deg,rgba(139,92,246,.24),rgba(34,211,238,.12))">'+
-      '<div class="t" style="font-size:17px">'+esc(daily.t)+'</div><div class="a"><i></i>'+esc(daily.a)+' · tap to copy</div></div>';
-  }
-  html += '<h2 class="sec">'+list.length+' lines</h2>';
-  list.forEach(function(q){ html += '<div class="quote ripple" data-quote="'+esc(q.t)+'"><div class="t">'+esc(q.t)+'</div><div class="a"><i></i>'+esc(q.a)+'</div></div>'; });
-  $("#quoteList").innerHTML = html;
-  renderPhraseGen();
-}
 var PH = ["not your keys","not your coins","cold storage forever","two backups minimum","test with dust",
   "revoke the approve","read before you sign","scam radar on","no DMs accepted","seed on paper",
   "verify the contract","small size first","bull market patience","bear market courage"];
@@ -507,15 +490,6 @@ var SCAMS = [
   ["Fake urgency in apps", "Cloned wallet apps and adverts are the most common mobile theft. Check the publisher before installing."],
   ["Links in notifications", "Never sign a transaction from a link you did not open yourself. Type the domain, or use a bookmark."]
 ];
-function renderSafety(){
-  $("#rulesList").innerHTML = RULES.map(function(r,i){
-    return '<div class="rule"><i>'+(i+1)+'</i><p>'+esc(r)+'</p></div>';
-  }).join("");
-  $("#scamCard").innerHTML = SCAMS.map(function(s){
-    return '<div class="kv" style="align-items:flex-start"><span style="flex:1"><b style="display:block;color:#fecdd3">'+s[0]+'</b>'+
-      '<span style="font-size:12.6px;color:var(--muted)">'+esc(s[1])+'</span></span></div>';
-  }).join("");
-}
 
 /* =====================================================================
    ABOUT
@@ -569,10 +543,8 @@ W.RENDER.home = function(){ W.homeRender(); };
 W.RENDER.words = function(){ W.renderWords(); };
 W.RENDER.seeds = renderSeeds;
 W.RENDER.market = renderMarket;
-W.RENDER.pulse = renderPulse;
 W.RENDER.vault = function(){ renderVault(); bindVault(); };
 W.renderVault = renderVault;
-W.RENDER.safety = renderSafety;
 W.RENDER.about = renderAbout;
 
 /* polling */

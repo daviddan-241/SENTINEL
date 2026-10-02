@@ -144,7 +144,7 @@ W.burst = function(el, colours){
 };
 
 /* =========================== 5. directional view transitions =========================== */
-var ORDER = ["home","words","seeds","market","pulse","safety","vault","about"];
+var ORDER = ["home","words","seeds","wallet","market","vault","about"];
 var prevIdx = ORDER.indexOf(ST.view);
 W.onGo = function(v){
   var idx = ORDER.indexOf(v);

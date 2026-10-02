@@ -5,7 +5,8 @@ two different ways without a server, and both are already wired up in this repos
 
 | Layer | What it is | Needs |
 |---|---|---|
-| The app | `https://daviddan-241.github.io/SENTINEL/` | nothing — GitHub Pages serves it |
+| The app | `https://daviddan-241.github.io/SENTINEL/` — word list, trainers, market **and the wallet scanner** | nothing — GitHub Pages serves it |
+| The wallet | runs in the page, reading Blockscout, mempool.space, blockstream.info, publicnode and Solana RPCs directly | nothing — all of them send permissive CORS headers |
 | Live prices | `market.json`, refreshed every 15 min by a scheduled GitHub Action | nothing — runs in your own repo |
 | Prices, if the snapshot is stale | the page reads Kraken and alternative.me directly | nothing — keyless public APIs, CORS-open |
 | Cross-device sync, real-usage trending | the Python backend | optional, any host |

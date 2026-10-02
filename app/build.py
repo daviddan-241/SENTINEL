@@ -99,7 +99,7 @@ def main():
 
     head = (ROOT / "tpl_head.html").read_text()
     body = (ROOT / "tpl_body.html").read_text()
-    js = "\n".join((ROOT / f).read_text() for f in ("js1.js", "js2.js", "js3.js"))
+    js = "\n".join((ROOT / f).read_text() for f in ("js1.js", "js2.js", "js3.js", "js4.js"))
     head = head.replace("__ICON__", icon_uri).replace("__MANIFEST__", manifest_uri)
     html = (head + body + "\n<script>window.__VAULT__=" + blob + ";</script>\n<script>\n"
             + js + "\n</script>\n</body>\n</html>\n")

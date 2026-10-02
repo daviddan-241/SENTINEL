@@ -323,6 +323,25 @@ def main():
                   all(isinstance(c["price"], (int, float)) and c["price"] > 0 for c in priced))
         runner = ROOT / "tools" / "market_snapshot.py"
         check("the refresh script exists for the scheduled Action", runner.exists())
+        # ---------------------------------------------------------------- the wallet view
+        # The address scanner runs in the page, against public APIs directly — no server of ours
+        # is involved. These pin the parts that make that honest.
+        print("\nwallet view")
+        check("the wallet is a bottom tab", 'data-v="wallet"' in html)
+        check("the wallet view exists", 'id="v-wallet"' in html)
+        check("the filler views were removed", 'id="v-safety"' not in html and 'id="v-pulse"' not in html)
+        check("a phrase is refused in the page itself", "never accepts a recovery phrase" in html)
+        check("the scanner reads Bitcoin from two indexers",
+              "mempool.space" in html and "blockstream.info" in html)
+        check("the scanner reads EVM chains from explorers and an independent node",
+              "blockscout.com" in html and "publicnode.com" in html)
+        check("the scanner reads Solana from two RPCs",
+              "api.mainnet-beta.solana.com" in html and "solana-rpc.publicnode.com" in html)
+        check("address checksums are real, not regexes",
+              "bech32Polymod" in html and "base58check" in html.lower())
+        check("junk tokens are flagged and never counted", "spamCheck" in html and "Flagged as junk" in html)
+        check("nothing in the wallet can sign or send",
+              "eth_sendRawTransaction" not in html and "sendTransaction" not in html)
         check("app has the iOS no-zoom fix", "html.ios" in html and 'classList.add("ios")' in html)
         check("app registers the offline service worker", "serviceWorker" in html and "register" in html)
         total_kb = len(html.encode()) // 1024

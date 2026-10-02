@@ -1,12 +1,12 @@
 /* =========================================================================
-   WordVault service worker — build 8dbf0c08f4
+   WordVault service worker — build 62399eb4ab
    Only one job: keep the app itself available when there is no network.
 
    * navigations and .html  -> network first, cache fallback (always fresh when online)
    * /api/, market.json or
      cross-origin           -> never touched, the app already handles offline itself
    ========================================================================= */
-var VERSION = "8dbf0c08f4";
+var VERSION = "62399eb4ab";
 var CACHE = "wordvault-" + VERSION;
 var SHELL = ["./", "./index.html", "./manifest.webmanifest"];
 

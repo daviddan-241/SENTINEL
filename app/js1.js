@@ -364,12 +364,11 @@ var VIEWS = {
   words:   {title:"Words",    sub:TERMS.length+" dictionary entries", icon:"i-book",  drawer:"Explore"},
   seeds:   {title:"Seeds",    sub:"BIP-39 · 2,048 words",            icon:"i-key",   drawer:"Explore"},
   market:  {title:"Market",   sub:"live prices · sentiment",         icon:"i-chart", drawer:"Explore"},
-  pulse:   {title:"Pulse",    sub:"culture · quotes · slang",        icon:"i-wave",  drawer:"Explore"},
-  safety:  {title:"Safety",   sub:"rules · scam checklist",          icon:"i-shield",drawer:"Explore"},
+  wallet:  {title:"Wallet",   sub:"watch-only · real chains",         icon:"i-coins", drawer:"Explore"},
   vault:   {title:"Vault",    sub:"progress · sync · settings",      icon:"i-vault", drawer:"Your data"},
   about:   {title:"About",    sub:"backend · data sources",          icon:"i-info",  drawer:"Your data"}
 };
-var TABORDER = ["home","words","seeds"];
+var TABORDER = ["home","words","seeds","wallet"];
 var rendered = {}, RENDER = {};
 function go(v){
   if(!VIEWS[v]) v = "home";
@@ -396,8 +395,7 @@ $$("#tabs .tabbtn").forEach(function(b){ b.addEventListener("click", function(){
 /* ------------------------------- drawer ------------------------------- */
 var DRAWER = [
   {v:"market", icon:"i-chart", t:"Market pulse",  s:"live prices & sentiment"},
-  {v:"pulse",  icon:"i-wave",  t:"Pulse",         s:"culture, quotes, slang"},
-  {v:"safety", icon:"i-shield",t:"Safety rules",  s:"12 rules + scam checklist"},
+  {v:"wallet", icon:"i-coins", t:"Wallet",        s:"watch-only address scanner"},
   {v:"vault",  icon:"i-vault", t:"Your vault",    s:"progress, sync, export", grp:"data"},
   {v:"about",  icon:"i-info",  t:"About",         s:"backend & data sources", grp:"data"}
 ];

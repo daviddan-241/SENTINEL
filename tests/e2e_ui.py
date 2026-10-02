@@ -5,7 +5,8 @@ WordVault browser end-to-end test — iPhone profile, real user journey.
     pip install playwright && playwright install chromium
     python3 tests/e2e_ui.py            # starts its own server + throw-away database
 
-Proves, in a real browser: the iOS no-zoom rule, the three-tab bar, the word wall,
+Proves, in a real browser: the iOS no-zoom rule, the four-tab bar, the word wall,
+and the wallet scanner (address validation, live reads, the phrase refusal),
 saving/learning, real-usage trending on a cold database, the offline fallback and
 the service-worker app shell. Fails loudly on any console error.
 """
@@ -110,17 +111,17 @@ def main():
                   str(page.evaluate("[document.documentElement.scrollWidth, window.innerWidth]")))
             page.keyboard.press("Escape")
 
-            # ---------------------------------------------------------- three tabs
+            # ---------------------------------------------------------- tabs
             print("\ntabs & drawer")
             tabs = page.eval_on_selector_all(".tabbtn", "e=>e.map(x=>x.textContent.trim())")
-            check("exactly three bottom tabs", tabs == ["Home", "Words", "Seeds"], str(tabs))
+            check("four bottom tabs, wallet included", tabs == ["Home", "Words", "Seeds", "Wallet"], str(tabs))
             info = page.eval_on_selector('.tabbtn.on', "e=>[getComputedStyle(e).transform, getComputedStyle(e).zIndex]")
             check("active tab is lifted and scaled", "1.07" in info[0] and "-3" in info[0], info[0])
             check("sliding indicator exists", page.eval_on_selector("#tabInd", "e=>!!e"))
             page.click("#btnDrawer")
             page.wait_for_timeout(600)
             rows = page.eval_on_selector_all("#drawer .drow", "e=>e.length")
-            check("everything else lives in the drawer (10 rows)", rows >= 10, str(rows))
+            check("the drawer holds the settings and the views that are not tabs (9 rows)", rows >= 9, str(rows))
             page.keyboard.press("Escape")
             page.wait_for_timeout(400)
 
@@ -202,6 +203,51 @@ def main():
             page.wait_for_timeout(900)
             check("the whole wall works offline", page.eval_on_selector_all("#wall .ww", "e=>e.length") == 2048)
 
+            # ---------------------------------------------------------- the wallet view
+            # An address scanner in the page itself: real validation, real chain reads, and the
+            # two rules that make it honest — no phrases, and no trusting a single provider.
+            print("\nwallet")
+            page.click('.tabbtn[data-v="wallet"]')
+            page.wait_for_timeout(900)
+            check("wallet tab opens the scanner", page.evaluate("document.querySelector('.view.on').id") == "v-wallet")
+            check("the six EVM chains are offered up front",
+                  page.eval_on_selector_all("#wChains .filters .chip", "e=>e.length") == 6)
+            check("safety and pulse are gone", not page.query_selector("#v-safety") and not page.query_selector("#v-pulse"))
+
+            page.fill("#wAddr", "abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon about")
+            page.click("#wScan")
+            page.wait_for_timeout(700)
+            body = page.text_content("#wResult")
+            check("a pasted recovery phrase is refused with an explanation",
+                  "never accepts a recovery phrase" in body, body[:50])
+
+            page.fill("#wAddr", "1A1zP1eP5QGefi2DMPTfTL5SLmv7DivfNb")
+            page.click("#wScan")
+            page.wait_for_timeout(700)
+            check("a mistyped address fails its Base58Check checksum",
+                  "checksum" in page.text_content("#wResult").lower())
+
+            btc_stats = json.dumps({"address": "1A1zP1eP5QGefi2DMPTfTL5SLmv7DivfNa",
+                                    "chain_stats": {"funded_txo_sum": 5747835189, "spent_txo_sum": 0, "tx_count": 66672},
+                                    "mempool_stats": {"funded_txo_sum": 0, "spent_txo_sum": 0, "tx_count": 0}})
+            page.route("**/mempool.space/**", lambda r: r.fulfill(status=200, content_type="application/json", body=btc_stats))
+            page.route("**/blockstream.info/**", lambda r: r.fulfill(status=200, content_type="application/json", body=btc_stats))
+            page.fill("#wAddr", "1A1zP1eP5QGefi2DMPTfTL5SLmv7DivfNa")
+            page.click("#wScan")
+            page.wait_for_timeout(3200)
+            body = page.text_content("#wResult")
+            check("a scanned balance renders in the page", "57.47835189" in body, body[:40])
+            check("two providers agreeing reads as Confirmed", "Confirmed" in body)
+            check("both providers are named", "mempool.space" in body and "blockstream.info" in body)
+            check("there is a link out to the explorer",
+                  page.query_selector('#wResult a[href*="mempool.space/address"]') is not None)
+            page.click('#wResult [data-act="watch"]')
+            page.wait_for_timeout(800)
+            check("the address joins the watch list", page.eval_on_selector_all("#wList .wrow", "e=>e.length") >= 1)
+            check("the watch list totals only what is confirmed", "Confirmed total" in page.text_content("#wList"))
+            page.unroute("**/mempool.space/**")
+            page.unroute("**/blockstream.info/**")
+
             # harder case: no network at all — the worker must serve the app shell
             ctx.route("**/*", lambda r: r.abort())
             page.reload(wait_until="domcontentloaded")
@@ -216,7 +262,7 @@ def main():
             page.wait_for_timeout(1500)
             page.click("#btnDrawer")
             page.wait_for_timeout(500)
-            page.evaluate("document.querySelectorAll('#drawer .drow')[4].click()")
+            page.evaluate('[].find.call(document.querySelectorAll("#drawer .drow"), function(d){ return d.getAttribute("data-go") === "about"; }).click()')
             page.wait_for_timeout(2000)
             page.route("**/api/**", lambda r: r.abort())
             page.reload(wait_until="domcontentloaded")
@@ -261,7 +307,7 @@ def main():
             kp.wait_for_timeout(2500)
             kp.click("#btnDrawer")
             kp.wait_for_timeout(500)
-            kp.evaluate("document.querySelectorAll('#drawer .drow')[0].click()")   # Market pulse
+            kp.evaluate('[].find.call(document.querySelectorAll("#drawer .drow"), function(d){ return d.getAttribute("data-go") === "market"; }).click()')
             kp.wait_for_timeout(2000)
             check("reduced price feed renders without errors", not kerr, str(kerr[:1]))
             check("missing market cap shows a dash, not a blank crash",
@@ -292,7 +338,7 @@ def main():
             sp.wait_for_timeout(2500)
             sp.click("#btnDrawer")
             sp.wait_for_timeout(500)
-            sp.evaluate("document.querySelectorAll('#drawer .drow')[0].click()")   # Market pulse
+            sp.evaluate('[].find.call(document.querySelectorAll("#drawer .drow"), function(d){ return d.getAttribute("data-go") === "market"; }).click()')
             sp.wait_for_timeout(2000)
             check("static host renders prices with every API call blocked",
                   len(sp.eval_on_selector("#coinGrid", "e=>e.innerHTML")) > 200)
@@ -315,7 +361,7 @@ def main():
             dp.on("pageerror", lambda e: derr.append(str(e)[:150]))
             dp.goto(base + "/", wait_until="networkidle")
             dp.wait_for_timeout(2500)
-            check("opens on a large screen", dp.eval_on_selector_all(".tabbtn", "e=>e.length") == 3)
+            check("opens on a large screen", dp.eval_on_selector_all(".tabbtn", "e=>e.length") == 4)
             check("no horizontal overflow on desktop",
                   dp.evaluate("document.documentElement.scrollWidth <= window.innerWidth + 2"),
                   str(dp.evaluate("[document.documentElement.scrollWidth, window.innerWidth]")))

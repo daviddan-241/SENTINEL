@@ -126,18 +126,7 @@
     <div class="list" id="movers"></div>
   </section>
 
-  <!-- ===================== PULSE ===================== -->
-  <section class="view" id="v-pulse">
-    <div class="card glass tint">
-      <span class="pill">Pulse</span>
-      <h3 style="margin:10px 0 6px;font-size:22px;letter-spacing:-.035em;font-weight:800">The lines that define the culture</h3>
-      <p style="margin:0;font-size:13.5px;color:#c9d1e6">Catchphrases, hard-won wisdom and safety rules from 17 years of crypto. Tap any card to copy it.</p>
-    </div>
-    <div class="filters" id="quoteFilters"></div>
-    <div class="list" id="quoteList"></div>
-    <h2 class="sec">Wallet emergency phrase <span class="n">(a joke)</span></h2>
-    <div class="card glass" id="phraseGen"></div>
-  </section>
+  
 
   <!-- ===================== VAULT ===================== -->
   <section class="view" id="v-vault">
@@ -163,17 +152,31 @@
     <footer class="ft">WordVault v2 · works offline · nothing is sold, nothing is tracked beyond anonymous counters.</footer>
   </section>
 
-  <!-- ===================== SAFETY ===================== -->
-  <section class="view" id="v-safety">
+  
+
+  <!-- ===================== WALLET ===================== -->
+  <section class="view" id="v-wallet">
     <div class="card glass tint">
-      <span class="pill r">Non-negotiable</span>
-      <h3 style="margin:10px 0 6px;font-size:22px;letter-spacing:-.035em;font-weight:800">Self-custody rules</h3>
-      <p style="margin:0;font-size:13.5px;color:#c9d1e6">Twelve rules that prevent almost every loss in crypto. Read them once, then read them again after your first good month.</p>
+      <span class="pill c">Watch-only</span>
+      <h3 style="margin:10px 0 6px;font-size:22px;letter-spacing:-.035em;font-weight:800">Check any address</h3>
+      <p style="margin:0;font-size:13.5px;color:#c9d1e6">Paste a Bitcoin, EVM or Solana address and this page reads the real chains for you — balance, value, activity and junk tokens, from two independent providers. <b style="color:#fde68a">A recovery phrase is never accepted here</b>, and the input will tell you so if you paste one.</p>
     </div>
-    <h2 class="sec">The twelve</h2>
-    <div id="rulesList"></div>
-    <h2 class="sec">Scam checklist</h2>
-    <div class="card glass" id="scamCard"></div>
+
+    <div class="wsearch">
+      <input id="wAddr" type="text" inputmode="text" autocomplete="off" autocapitalize="off" autocorrect="off" spellcheck="false" placeholder="bc1… · 1… · 0x… · Solana"/>
+      <button class="btn" id="wScan">Scan</button>
+    </div>
+    <div id="wChains"></div>
+    <div id="wResult"></div>
+
+    <h2 class="sec">Watched addresses <span class="n" id="wCount"></span></h2>
+    <div id="wList"></div>
+
+    <h2 class="sec">How this stays honest</h2>
+    <div class="card glass" id="wNotes"></div>
+    <div class="card glass" style="margin-top:10px;font-size:12.4px;color:#c9d1e6;line-height:1.55">
+      "<b>Why no phrases.</b> This is a static page: there is no vault, no encryption and no way to prove what happens to a phrase typed into it. Real money only ever comes from a wallet you control. Sentinel's job here is to <i>look</i>, which is why it has no signing code at all — it cannot move funds even if it wanted to.
+    </div>
   </section>
 
   <!-- ===================== ABOUT ===================== -->
@@ -199,6 +202,7 @@
     <button class="tabbtn on ripple" data-v="home"><svg class="i" viewBox="0 0 24 24"><use href="#i-home"/></svg><span>Home</span><i class="pip"></i></button>
     <button class="tabbtn ripple" data-v="words"><svg class="i" viewBox="0 0 24 24"><use href="#i-book"/></svg><span>Words</span><i class="pip"></i></button>
     <button class="tabbtn ripple" data-v="seeds"><svg class="i" viewBox="0 0 24 24"><use href="#i-key"/></svg><span>Seeds</span><i class="pip"></i></button>
+    <button class="tabbtn ripple" data-v="wallet"><svg class="i" viewBox="0 0 24 24"><use href="#i-coins"/></svg><span>Wallet</span><i class="pip"></i></button>
   </div>
 </nav>
 

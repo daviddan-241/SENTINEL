@@ -52,10 +52,12 @@ do — is in **[ios/README.md](ios/README.md)** and `ios/docs/`.
 | | |
 |---|---|
 | **1,158 crypto terms** | 21 categories, three depth levels, searchable — 2026-current: GENIUS/CLARITY acts, x402 agent payments, restaking, prediction markets, RWA tokenisation, DVOL & gamma squeezes, Permit2, EMI rails, Nigerian P2P realities |
+| **Wallet (watch-only)** | Paste a Bitcoin, EVM or Solana address and the page reads the real chains: balance, value, activity, junk tokens — from **two independent providers**, with the same "confirmed only when two agree" rule the iOS app uses. Base58Check and bech32 checksums are verified in the browser; a mistyped address is caught before any network call. **A recovery phrase is never accepted**, and the input says so if you paste one |
 | **The real BIP-39 list** | All **2,048** words with position, alphabet neighbours and letter shape; 45 carry full dictionary entries |
 | **The word wall** | Every seed word on one screen — 3-column wall, filters for *all / learned / defined*, instant search, tap any tile to open it |
 | **Trainers** | Flashcards, real-word quiz with deliberate misspellings, definition quiz, phrase builder, and a **BIP-39 checksum validator** (passes the official test vectors) |
-| **Live market** | Prices, 24h moves, 7-day sparklines, market cap, dominance, Fear & Greed — cached server-side so the UI never blanks |
+| **Live market** | Prices, 24h moves, 7-day sparklines, market cap, dominance, Fear & Greed — a scheduled Action keeps `market.json` fresh, and the page reads Kraken and alternative.me directly when it is stale, so none of this needs a server |
+| **Honest by construction** | Unconfirmed balances are shown but kept out of the total, junk airdrops are flagged with their reason and never counted, and a provider that cannot be reached renders as "could not check" rather than as zero |
 | **Trending, for real** | Every word anyone opens is counted in the backend; the Home page ranks what people actually read — no invented numbers |
 | **Progress that syncs** | Saved words, learned seed words, streak and quiz stats live on the device and in your own backend row, with JSON export/import |
 | **Motion & glass** | Directional page transitions, reveal-on-scroll, count-up stats, red/green price flashes, sparkle bursts, and three bold glass tabs whose active tab lifts, scales and glows |
